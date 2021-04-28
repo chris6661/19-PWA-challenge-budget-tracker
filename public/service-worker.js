@@ -4,7 +4,7 @@ const DATA_CACHE_NAME = "data-cache-v1";
 
 const urlsToCache = [
   "/",
-  "/db.js",
+  "/idb.js",
   "/index.js",
   "/manifest.webmanifest",
   "/styles.css",
