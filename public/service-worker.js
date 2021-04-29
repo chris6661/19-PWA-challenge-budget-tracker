@@ -1,57 +1,55 @@
-const CACHE_NAME = "my-site-cache-v1";
-const DATA_CACHE_NAME = "data-cache-v1";
-
-
-const urlsToCache = [
-  "/",
-  "/idb.js",
-  "/index.js",
-  "/manifest.webmanifest",
-  "/styles.css",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
-  "https://cdn.jsdelivr.net/npm/chart.js@2.8.0"
-];
-
-self.addEventListener("install", function(event) {
-    //install steps run
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(function(cache) {
-            console.log("Opened cache"); 
-            return cache.addAll(urlsToCache); 
-        })
+//Files to cache when offline
+const FILES_TO_CACHE = [
+    "./index.html",
+    "./css/styles.css",
+    "./js/idb.js",
+    "./js/index.js"
+  ];
+  //
+  const APP_PREFIX = 'BudgetTracker';
+  const VERSION = '.v00.build00';
+  const CACHE_NAME = APP_PREFIX + VERSION;
+  // Install event to cache files the application will require using cache API.
+  self.addEventListener('install', function (e) {
+    e.waitUntil(
+      caches.open(CACHE_NAME).then(function (cache) {
+        console.log("Installing cache: " + CACHE_NAME)
+        return cache.addAll(FILES_TO_CACHE)
+      })
+    )
+  })
+ 
+  self.addEventListener('activate', function (e) {
+    e.waitUntil(
+      caches.keys().then(function (keyList) {
+        let cacheKeeplist = keyList.filter(function (key) {
+          return key.indexOf(APP_PREFIX);
+        });
+        cacheKeeplist.push(CACHE_NAME);
+        return Promise.all(
+          keyList.map(function (key, i) {
+            if (cacheKeeplist.indexOf(key) === -1) {
+              console.log('Deleting cache: ' + keyList[i]);
+              return caches.delete(keyList[i]);
+            }
+          }));
+      })
     );
-});
+  });
 
-self.addEventListener("fetch", function(event) {
-
-    if(event.request.url.includes("/api/")) {
-        event.respondWith(
-            caches.open(DATA_CACHE_NAME).then(cache => {
-                return fetch(event.request)
-                .then(response => {
-                    if (response.status === 200) {
-                        cache.put(event.request.url, response.clone()); 
-                    }
-                    return response; 
-                })
-
-                .catch(err => {
-                    return cache.match(event.request); 
-                }); 
-            }).catch(err => console.log(err))
-        ); 
-        return; 
-    }
-    event.respondWith(
-        fetch(event.request).catch(function() {
-            return caches.match(event.request).then(function(response) {
-                if (response) {
-                    return response; 
-                } else if (event.request.headers.get("accept").includes("text/html")) {
-                    return caches.match("/"); 
-                }
-            });
-        })
-    );
-});
+  // Fetch request to handle request from APP to network
+ 
+  self.addEventListener('fetch', function (e) {
+    console.log('Fetch request from app: ' + e.request.url)
+    e.respondWith(
+      caches.match(e.request).then(function (request) {
+        if (request) {
+          console.log('Responding to app fetch request with cached data: ' + e.request.url)
+          return request
+        } else {
+          console.log('No cache available, fetching from network: ' + e.request.url)
+          return fetch(e.request)
+        }
+      })
+    )
+  });
