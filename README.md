@@ -26,3 +26,4 @@ Clone the repository then:
  * CSS
  * Boostrap
 
+![](public/assets/images/notetakersshot1.png)
